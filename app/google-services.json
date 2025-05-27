@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "1016892065400",
+    "project_id": "gametracker-30425",
+    "storage_bucket": "gametracker-30425.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1016892065400:android:113d5493e842b028b8cf8d",
+        "android_client_info": {
+          "package_name": "com.example.gametracker"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1016892065400-n1nqmffehtlgrrcnn5j22m2efjf40e56.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.gametracker",
+            "certificate_hash": "210840841a16be84d99e179b6e66d429d9dd96ad"
+          }
+        },
+        {
+          "client_id": "1016892065400-5pls1csi82jtq9cbus6dv4fd51vh0g1m.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAkMeipwr-qvbFOaN5JpKUeezqxliszfl0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1016892065400-5pls1csi82jtq9cbus6dv4fd51vh0g1m.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
