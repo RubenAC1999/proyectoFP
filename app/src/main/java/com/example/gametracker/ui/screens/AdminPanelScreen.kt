@@ -47,7 +47,6 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminPanelScreenContent(userViewModel: UserViewModel = viewModel()) {
-
     val users by userViewModel.allUsers.collectAsState()
 
     LaunchedEffect(Unit) {

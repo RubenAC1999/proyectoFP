@@ -1,11 +1,13 @@
 package com.example.gametracker.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gametracker.data.repository.UserRepository
 import com.example.gametracker.model.UserModel
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -76,12 +78,24 @@ class UserViewModel : ViewModel() {
         }
     }
 
-    fun markWarningAsRead() {
-        val currentUser = _user.value ?: return
-        if (!currentUser.hasReadWarning) {
-            val updatedUser = currentUser.copy(hasReadWarning = true)
-            _user.value = updatedUser
+    fun markWarningAsRead(uid: String) {
+        val db = FirebaseFirestore.getInstance()
+
+        db.collection("users").document(uid)
+            .update(
+                mapOf(
+                    "hasReadWarning" to true,
+                    "warningMessage" to ""
+                )
+            )
+            .addOnSuccessListener {
+                Log.d("UserViewModel", "Aviso marcado como leído")
+                loadUserData(uid)
+            }
+            .addOnFailureListener { e ->
+                Log.e("UserViewModel", "Error al marcar el aviso como leído", e)
+
+            }
         }
     }
 
-}

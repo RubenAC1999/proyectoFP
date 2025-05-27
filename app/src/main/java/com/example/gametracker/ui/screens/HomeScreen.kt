@@ -92,6 +92,13 @@ fun HomeScreenContent(navController: NavController, userViewModel: UserViewModel
         }
     }
 
+    LaunchedEffect(user) {
+        val currentUser = user
+        if (currentUser != null && !currentUser.hasReadWarning && !currentUser.warningMessage.isNullOrEmpty()) {
+            showWarningDialog = true
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -261,16 +268,39 @@ fun HomeScreenContent(navController: NavController, userViewModel: UserViewModel
             }
         }
 
-        if (showWarningDialog) {
+        if (showWarningDialog && user != null) {
             AlertDialog(
                 onDismissRequest = { showWarningDialog = false },
-                title = { Text("Aviso importante") },
-                text = { Text(user?.warningMessage ?: "") },
+                title = {
+                    Text(
+                        text = "Aviso importante",
+                        color = naranja,
+                        style = MaterialTheme.typography.headlineSmall
+                    )
+                        },
+                text = {
+                    Text(
+                        text = user?.warningMessage ?: "",
+                        color = hueso,
+                        style = MaterialTheme.typography.bodyMedium)
+                       },
                 confirmButton = {
-                    TextButton(onClick = { showWarningDialog = false}) {
-                        Text("Entendido")
+                    TextButton(onClick = {
+                        showWarningDialog = false
+                        user?.let {
+                            userViewModel.markWarningAsRead(it.uid)
+                        }
+                    }) {
+                        Text(
+                            "Entendido",
+                            color = naranja,
+                            style = MaterialTheme.typography.labelLarge
+                        )
                     }
-                }
+                },
+                containerColor = Color(0xFF2C2C2C),
+                titleContentColor = naranja,
+                textContentColor = hueso
             )
         }
     }
