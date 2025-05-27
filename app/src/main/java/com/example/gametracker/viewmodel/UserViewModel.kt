@@ -59,6 +59,9 @@ class UserViewModel : ViewModel() {
         viewModelScope.launch {
             userRepository.getAllUsers(
                 onSuccess = { users ->
+                   users.forEach {
+                       Log.d("UserViewModel", "User ${it.displayName} banned: ${it.isBanned}, bannedUntil: ${it.bannedUntil}")
+                   }
                     _allUsers.value = users
                 },
                 onFailure = {
@@ -97,5 +100,15 @@ class UserViewModel : ViewModel() {
 
             }
         }
+
+    fun reportUser(userId: String, untilDate: Timestamp, message: String) {
+        userRepository.reportUser(userId, untilDate, message) { success ->
+            if (success) {
+                loadAllUsers()
+            } else {
+                Log.e("UserViewModel", "Error al reportar al usuario")
+            }
+        }
     }
+}
 

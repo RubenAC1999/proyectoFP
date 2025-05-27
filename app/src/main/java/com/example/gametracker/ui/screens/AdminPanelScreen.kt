@@ -1,5 +1,6 @@
 package com.example.gametracker.ui.screens
 
+import android.app.DatePickerDialog
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -34,13 +35,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.gametracker.model.UserModel
 import com.example.gametracker.ui.theme.hueso
 import com.example.gametracker.ui.theme.naranja
 import com.example.gametracker.viewmodel.UserViewModel
+import com.google.firebase.Timestamp
 import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
 import java.util.Locale
 
 
@@ -67,6 +72,11 @@ fun AdminPanelScreenContent(userViewModel: UserViewModel = viewModel()) {
     var showWarningDialog by remember { mutableStateOf(false) }
     var warningMessage by remember { mutableStateOf("") }
     var userToWarn by remember { mutableStateOf<UserModel?>(null) }
+
+    var showDatePicker by remember { mutableStateOf(false) }
+    var selectedUserToBan by remember { mutableStateOf<UserModel?>(null) }
+    var selectedDate by remember { mutableStateOf<Date?>(null) }
+
 
     Column(
         modifier = Modifier
@@ -123,14 +133,19 @@ fun AdminPanelScreenContent(userViewModel: UserViewModel = viewModel()) {
                                 style = MaterialTheme.typography.bodySmall
                             )
                         }
-                        if (user.isBanned == true) {
-                            val date = user.bannedUntil?.toDate()
-                            val formatter =
-                                SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                        if (user.isBanned == true && user.bannedUntil != null) {
+                           val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                            val formattedDate = formatter.format(user.bannedUntil.toDate())
 
                             Text(
-                                text = "Usuario reportado hasta ${formatter.format(date)}",
+                                text = "Reportado: $formattedDate",
                                 color = Color.Red,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        } else {
+                            Text(
+                                text = "El usuario no está reportado.",
+                                color = Color.Gray,
                                 style = MaterialTheme.typography.bodySmall
                             )
                         }
@@ -152,7 +167,9 @@ fun AdminPanelScreenContent(userViewModel: UserViewModel = viewModel()) {
                             Icon(Icons.Default.Warning, contentDescription = "Avisar", tint = Color.Yellow)
                         }
 
-                        IconButton(onClick = {     // TODO: Implementar lógica para reportar/bloquear usuario
+                        IconButton(onClick = {
+                            selectedUserToBan = user
+                            showDatePicker = true
                         }) {
                             Icon(Icons.Default.Lock, contentDescription = "Reportar", tint = Color.Red )
                         }
@@ -211,6 +228,41 @@ fun AdminPanelScreenContent(userViewModel: UserViewModel = viewModel()) {
 
                 containerColor = Color(0xFF2C2C2C)
             )
+        }
+
+        if (showDatePicker && selectedUserToBan != null) {
+            val context = LocalContext.current
+            val calendar = Calendar.getInstance()
+
+            DatePickerDialog(
+                context,
+                { _, year, month, dayOfMonth ->
+                    calendar.set(year, month, dayOfMonth, 23, 59, 59)
+                    selectedDate = calendar.time
+
+                    selectedUserToBan?.let {
+                        userViewModel.reportUser(
+                            userId = it.uid,
+                            untilDate = Timestamp(calendar.time),
+                            message = "Tu cuenta ha sido suspendida hasta la fecha indicada."
+                        )
+                    }
+
+                    showDatePicker = false
+                    selectedUserToBan = null
+                },
+
+                calendar.get(Calendar.YEAR),
+                calendar.get(Calendar.MONTH),
+                calendar.get(Calendar.DAY_OF_MONTH)
+            ).show()
+        }
+
+        LazyColumn {
+            items(filteredUsers) { user ->
+                Text("DEBUG - isBanned=${user.isBanned}, bannedUntil=${user.bannedUntil?.toDate()}")
+                // Aquí va tu Card normalmente
+            }
         }
     }
 }

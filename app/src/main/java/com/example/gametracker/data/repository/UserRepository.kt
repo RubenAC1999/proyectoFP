@@ -1,6 +1,7 @@
 package com.example.gametracker.data.repository
 
 import com.example.gametracker.model.UserModel
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
@@ -56,7 +57,11 @@ class UserRepository {
             .get()
             .addOnSuccessListener { result ->
                 val users = result.mapNotNull { doc ->
-                    doc.toObject(UserModel::class.java)?.copy(uid = doc.id)
+                    val user = doc.toObject(UserModel::class.java)?.copy(uid = doc.id)
+                    if (user != null) {
+                        val isBannedFromData = doc.getBoolean("isBanned") ?: false
+                        user.copy(isBanned = isBannedFromData)
+                    } else null
                 }
                 onSuccess(users)
             }
@@ -69,6 +74,20 @@ class UserRepository {
         val userRef = db.collection("users").document(userId)
         val updateMap = mapOf("warningMessage" to warningMessage)
         userRef.update(updateMap)
+            .addOnSuccessListener { onComplete(true) }
+            .addOnFailureListener { onComplete(false) }
+    }
+
+    fun reportUser(userId: String, untilDate: Timestamp, blockMessage: String, onComplete: (Boolean) -> Unit) {
+        val db = FirebaseFirestore.getInstance()
+        val updates = mapOf(
+            "isBanned" to true,
+            "bannedUntil" to untilDate,
+            "blockMessage" to blockMessage
+        )
+
+        db.collection("users").document(userId)
+            .update(updates)
             .addOnSuccessListener { onComplete(true) }
             .addOnFailureListener { onComplete(false) }
     }
