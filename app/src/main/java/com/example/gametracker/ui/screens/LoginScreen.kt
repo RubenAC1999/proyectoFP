@@ -16,10 +16,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -65,13 +68,22 @@ fun LoginScreenContent(navController: NavController, viewModel: AuthViewModel) {
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
 
-    // Para mostrar errores
+    var showDialog by remember { mutableStateOf(false) }
+    var dialogMessage by remember { mutableStateOf("") }
+
     LaunchedEffect(errorMessage) {
-        errorMessage?.let{
-            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+        errorMessage?.let { msg ->
+            if (msg.contains("bloqueado", ignoreCase = true) ||
+                msg.contains("válido hasta", ignoreCase = true)) {
+                dialogMessage = msg
+                showDialog = true
+            } else {
+                Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+            }
             viewModel.errorMessage.value = null
         }
     }
+
 
     LaunchedEffect(Unit) {
         viewModel.navigationEvent.collect { event ->
@@ -82,10 +94,48 @@ fun LoginScreenContent(navController: NavController, viewModel: AuthViewModel) {
                     }
                 }
                 is AuthViewModel.NavigationEvent.ShowError -> {
-                    Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
+                    if (event.message.contains("bloqueado", ignoreCase = true) ||
+                        event.message.contains("válido hasta", ignoreCase = true)) {
+                        dialogMessage = event.message
+                        showDialog = true
+                    } else {
+                        Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
+                    }
                 }
             }
         }
+    }
+
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = {
+                Text(
+                    text = "Acceso restringido",
+                    color = naranja,
+                    style = MaterialTheme.typography.headlineSmall
+                )
+                    },
+            text = {
+                Text(
+                    text = dialogMessage,
+                    color = hueso,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                   },
+            confirmButton = {
+                TextButton(onClick = { showDialog = false }) {
+                    Text(
+                        text = "Aceptar",
+                        color = naranja,
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
+            },
+            containerColor = Color(0xFF2C2C2C),
+            titleContentColor = naranja,
+            textContentColor = hueso
+        )
     }
 
     // Para Google
@@ -202,7 +252,6 @@ fun LoginScreenContent(navController: NavController, viewModel: AuthViewModel) {
                     )
                 )
             }
-
         }
     }
 }

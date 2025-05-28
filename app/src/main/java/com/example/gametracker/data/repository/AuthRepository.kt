@@ -25,7 +25,7 @@ object AuthRepository {
             if (firebaseUser != null) {
                 Result.success(firebaseUser)
             } else {
-                Result.failure(Exception("No se pudo obtener el usuario después del resgistro."))
+                Result.failure(Exception("No se pudo obtener el usuario después del registro."))
             }
 
         } catch (ex: Exception) {
@@ -33,10 +33,15 @@ object AuthRepository {
         }
 
 
-    suspend fun loginsUser(email: String, password: String): Result<Unit> =
+    suspend fun loginsUser(email: String, password: String): Result<FirebaseUser> =
         try {
-            auth.signInWithEmailAndPassword(email, password).await()
-            Result.success(Unit)
+            val authResult = auth.signInWithEmailAndPassword(email, password).await()
+            val user = authResult.user
+            if (user != null) {
+                Result.success(user)
+            } else {
+                Result.failure(Exception("Usuario no encontrado"))
+            }
         } catch (ex: Exception) {
             Result.failure(ex)
         }

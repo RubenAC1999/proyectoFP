@@ -72,23 +72,21 @@ class AuthViewModel(
             errorMessage.value = null
 
             authRepository.loginsUser(email, password)
-                .onSuccess {
-                    // Emitir el evento de navegación en un launch dentro de viewModelScope
-                    viewModelScope.launch {
-                        _navigationEvent.emit(NavigationEvent.NavigateToHome)
-                    }
+                .onSuccess { user ->
+                    val uid = user.uid
+                    checkUserBanStatus(uid)
                 }
                 .onFailure { error ->
                     errorMessage.value = when {
                         error.message?.contains("invalid") == true -> "Credenciales incorrectas."
                         error.message?.contains("user") == true -> "Usuario no encontrado."
-                        else -> "Error al iniciar sesión ${error.localizedMessage}"
+                        else -> "Error al iniciar sesión: ${error.localizedMessage}"
                     }
+                    isLoading.value = false
                 }
-
-            isLoading.value = false
         }
     }
+
 
     fun loginWithGoogle(idToken: String) {
         viewModelScope.launch {
@@ -141,5 +139,33 @@ class AuthViewModel(
 
     fun logout(context: Context) {
         AuthRepository.signOut(context)
+    }
+
+    private fun checkUserBanStatus(uid: String) {
+        val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+        firestore.collection("users")
+            .document(uid)
+            .get()
+            .addOnSuccessListener { document ->
+                val isBanned = document.getBoolean("isBanned") ?: false
+                val bannedUntilTimestamp = document.getTimestamp("bannedUntil")
+                val bannedUntil = bannedUntilTimestamp?.toDate()
+                val blockMessage = document.getString("blockMessage") ?: "Has sido bloqueado."
+
+                if (isBanned && bannedUntil != null && bannedUntil.after(java.util.Date())) {
+                    viewModelScope.launch {
+                        _navigationEvent.emit(
+                            NavigationEvent.ShowError("$blockMessage Válido hasta: $bannedUntil")
+                        )
+                    }
+                } else {
+                    viewModelScope.launch {
+                        _navigationEvent.emit(NavigationEvent.NavigateToHome)
+                    }
+                }
+            }
+            .addOnFailureListener {
+                errorMessage.value = "Error al verificar el estado del usuario"
+            }
     }
 }
