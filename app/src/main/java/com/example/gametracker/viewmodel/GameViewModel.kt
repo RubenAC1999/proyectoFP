@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gametracker.data.remote.RetrofitInstance
 import com.example.gametracker.model.GameModel
+import com.example.gametracker.model.Screenshot
 import kotlinx.coroutines.launch
 
 class GameViewModel: ViewModel() {
@@ -15,6 +16,12 @@ class GameViewModel: ViewModel() {
 
     private val _popularGames = mutableStateOf<List<GameModel.Game>>(emptyList())
     val popularGames: State<List<GameModel.Game>> get() = _popularGames
+
+    private val _gameDetail = mutableStateOf<GameModel.Game?>(null)
+    val gameDetail: State<GameModel.Game?> get() = _gameDetail
+
+    private val _screenshots = mutableStateOf<List<Screenshot>>(emptyList())
+    val screenshots: State<List<Screenshot>> get() = _screenshots
 
     fun loadTopRateGames(apiKey: String) {
         viewModelScope.launch {
@@ -49,4 +56,35 @@ class GameViewModel: ViewModel() {
             }
         }
     }
+
+    fun getGameById(id: Int): GameModel.Game? {
+        val gameFromTopRated = _topRatedGames.value.find { it.id == id }
+
+        if(gameFromTopRated != null) return gameFromTopRated
+
+        val gameFromPopular = _popularGames.value.find { it.id == id }
+        if (gameFromPopular != null) return gameFromPopular
+
+        return null
+    }
+
+    suspend fun loadGameDetail(apiKey: String, gameId: Int) {
+        try {
+            val detail = RetrofitInstance.api.getGameDetail(gameId, apiKey)
+            _gameDetail.value = detail
+        } catch (e: Exception) {
+            Log.e("GameViewModel", "Error al cargar detalle del juego.")
+        }
+    }
+
+    suspend fun loadGameScreenshots(apiKey: String, gameId: Int) {
+        try {
+            val response = RetrofitInstance.api.getGameScreenshots(gameId, apiKey)
+            _screenshots.value = response.results
+        } catch (e: Exception) {
+            Log.e("GameViewModel", "Error al cargar las capturas")
+        }
+    }
+
+
 }

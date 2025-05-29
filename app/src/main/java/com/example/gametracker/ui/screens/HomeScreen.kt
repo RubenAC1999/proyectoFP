@@ -172,6 +172,9 @@ fun HomeScreenContent(navController: NavController, userViewModel: UserViewModel
                                 .padding(8.dp)
                                 .width(120.dp) // Tamaño de la caja
                                 .clip(RoundedCornerShape(8.dp))
+                                .clickable {
+                                    navController.navigate("game_detail/${game.id}")
+                                }
                         ) {
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -198,8 +201,8 @@ fun HomeScreenContent(navController: NavController, userViewModel: UserViewModel
                                     textAlign = TextAlign.Center
                                 )
 
-                                Text(
-                                    text = game.developer ?: "Desconocido",
+                              Text(
+                                   text = game.genres.firstOrNull()?.name ?: "Sin género",
                                     color = hueso,
                                     style = MaterialTheme.typography.bodySmall,
                                     textAlign = TextAlign.Center
@@ -248,7 +251,7 @@ fun HomeScreenContent(navController: NavController, userViewModel: UserViewModel
                                 )
 
                                 Text(
-                                    text = game.developer ?: "Desconocido",
+                                    text = game.genres.firstOrNull()?.name ?: "Sin género",
                                     color = hueso,
                                     style = MaterialTheme.typography.bodySmall,
                                     textAlign = TextAlign.Center

@@ -142,12 +142,6 @@ fun AdminPanelScreenContent(userViewModel: UserViewModel = viewModel()) {
                                 color = Color.Red,
                                 style = MaterialTheme.typography.bodySmall
                             )
-                        } else {
-                            Text(
-                                text = "El usuario no está reportado.",
-                                color = Color.Gray,
-                                style = MaterialTheme.typography.bodySmall
-                            )
                         }
 
                         if (!user.warningMessage.isNullOrEmpty()) {
