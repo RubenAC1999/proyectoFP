@@ -28,6 +28,7 @@ import com.example.gametracker.ui.screens.LoginScreenContent
 import com.example.gametracker.ui.screens.RegisterScreenContent
 import com.example.gametracker.viewmodel.AuthViewModel
 import com.example.gametracker.viewmodel.AuthViewModelFactory
+import com.example.gametracker.viewmodel.GameListViewModel
 import com.example.gametracker.viewmodel.GameViewModel
 import com.example.gametracker.viewmodel.UserViewModel
 
@@ -44,6 +45,7 @@ class MainActivity : ComponentActivity() {
 
                 val userViewModel = UserViewModel()
                 val gameViewModel = GameViewModel()
+                val gameListViewModel = GameListViewModel()
 
                 val viewModel: AuthViewModel by viewModels {
                     AuthViewModelFactory(application, userViewModel)
@@ -62,7 +64,7 @@ class MainActivity : ComponentActivity() {
                     composable(Routes.HOME) { HomeScreenContent( navController, userViewModel, gameViewModel) }
                     composable(Routes.ACCOUNT) {
                         val user by userViewModel.user.collectAsState()
-                        AccountScreenContent(navController, userRole = user?.role)
+                        AccountScreenContent(userViewModel, gameListViewModel, userRole = user?.role, navController)
                     }
                     composable(Routes.LIST) { ListScreenContent(navController) }
                     composable(Routes.ADMIN) {
@@ -71,15 +73,18 @@ class MainActivity : ComponentActivity() {
                     composable(
                         route = "${Routes.GAME_DETAIL}/{gameId}",
                         arguments = listOf(navArgument("gameId") { type = NavType.IntType })
-                    ) {
-                        backStackEntry ->
+                    ) { backStackEntry ->
                         val gameId = backStackEntry.arguments?.getInt("gameId") ?: -1
+                        val userId = currentUser?.uid ?: ""
 
-                        GameDetailScreenContent(gameId = gameId, gameViewModel = gameViewModel, apiKey)
+                        GameDetailScreenContent(
+                            gameId = gameId,
+                            gameViewModel = gameViewModel,
+                            gameListViewModel = GameListViewModel(),
+                            apiKey = apiKey,
+                            userId = userId
+                        )
                     }
-
-
-
                 }
             }
         }
