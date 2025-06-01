@@ -91,7 +91,8 @@ fun GameDetailScreenContent(
         imageUrl = gameDetail.imageUrl,
         status = "wishlist",
         rating = null,
-        hoursPlayed = 0
+        hoursPlayed = 0,
+        genres = gameDetail.genres?.map { it.name }
     )
 
     Column(
@@ -272,6 +273,7 @@ fun AddGameDialog(
     var selectedStatus by remember { mutableStateOf("Wishlist") }
     var ratingInput by remember { mutableStateOf("") }
     var hoursInput by remember { mutableStateOf("") }
+    var review by remember { mutableStateOf("") }
 
     val statusOptions = listOf("Wishlist", "Jugando", "Completado", "Dropeado")
 
@@ -285,7 +287,8 @@ fun AddGameDialog(
                 val updatedGame = gameEntry.copy(
                     status = selectedStatus.lowercase(),
                     rating = rating,
-                    hoursPlayed = hours
+                    hoursPlayed = hours,
+                    review = review
                 )
                 onAdd(updatedGame)
                 onDismiss()
@@ -324,6 +327,15 @@ fun AddGameDialog(
                     onValueChange = { hoursInput = it },
                     label = { Text("Horas jugadas") },
                     singleLine = true
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = review,
+                    onValueChange = { review = it },
+                    label = { Text("Opinión (opcional)") },
+                    maxLines = 4
                 )
             }
         }

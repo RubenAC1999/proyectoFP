@@ -7,5 +7,8 @@ data class GameEntry (
     val imageUrl: String? = "",
     val status: String = "",
     val rating: Int? = null,
-    val hoursPlayed: Int = 0
+    val hoursPlayed: Int = 0,
+    val genres: List<String>? = null,
+    val addedAt: Long = System.currentTimeMillis(),
+    val review: String? = null
 )

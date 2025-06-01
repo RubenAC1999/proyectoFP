@@ -1,10 +1,13 @@
 package com.example.gametracker.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -12,16 +15,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -43,6 +51,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.example.gametracker.model.GameEntry
 import com.example.gametracker.ui.navigation.Routes
 import com.example.gametracker.ui.theme.darkGray
 import com.example.gametracker.ui.theme.grisClaro
@@ -75,6 +84,8 @@ fun AccountScreenContent(
     val pendingCount = userGameList.count { it.status == "pendiente" }
     val droppedCount = userGameList.count { it.status == "dropeado" }
 
+    var selectedSort by remember { mutableStateOf("Por defecto") }
+
     LaunchedEffect(user?.uid) {
         user?.uid.let { uid ->
             if (uid != null) {
@@ -101,6 +112,7 @@ fun AccountScreenContent(
             .padding(16.dp)
     ) {
         item {
+            Spacer(modifier = Modifier.height(25.dp))
             Card(
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier
@@ -134,6 +146,7 @@ fun AccountScreenContent(
                             )
                         }
 
+
                         if (userRole == "admin") {
                             Button(
                                 onClick = { showDialog = true },
@@ -148,14 +161,53 @@ fun AccountScreenContent(
                         }
                     }
 
+                    Spacer(modifier = Modifier.height(16.dp))
+                    CompactUserStats(userGameList = userGameList)
+
                     Spacer(modifier = Modifier.height(24.dp))
 
                 }
             }
         }
 
+        item {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val options = listOf("Por defecto", "Puntuación", "Recientes")
+
+                options.forEach { option ->
+                    Button(
+                        onClick = { selectedSort = option },
+                        modifier = Modifier
+                            .padding(horizontal = 4.dp)
+                            .defaultMinSize(minWidth = 100.dp, minHeight = 40.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (selectedSort == option) naranja else grisClaro
+                        ),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = option,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White,
+                            maxLines = 1)
+                    }
+                }
+            }
+        }
+
         statusOrder.forEach { statusKey ->
-            val gamesInGroup = groupedGames[statusKey].orEmpty()
+            val baseList = groupedGames[statusKey].orEmpty()
+            val gamesInGroup = when (selectedSort) {
+                "Puntuación" -> baseList.sortedByDescending { it.rating ?: 0 }
+                "Recientes" -> baseList.sortedByDescending { it.addedAt }
+                else -> baseList
+            }
 
             if (gamesInGroup.isNotEmpty()) {
                 item {
@@ -169,57 +221,11 @@ fun AccountScreenContent(
                 }
 
                 items(gamesInGroup) { game ->
-                    Card(
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = grisClaro),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                AsyncImage(
-                                    model = game.imageUrl,
-                                    contentDescription = game.name,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier
-                                        .size(60.dp)
-                                        .clip(RoundedCornerShape(8.dp))
-                                )
-
-                                Spacer(modifier = Modifier.width(12.dp))
-
-                                Column {
-                                    Text(
-                                        text = game.name,
-                                        color = Color.White,
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
-                                    Text(
-                                        text = "${game.hoursPlayed}h jugadas",
-                                        color = Color.LightGray,
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                }
-                            }
-
-                            Text(
-                                text = game.rating?.toString() ?: "-",
-                                color = naranja,
-                                style = MaterialTheme.typography.headlineSmall
-                            )
-                        }
-                    }
+                    ExpandableGameCard(game)
                 }
             }
         }
-        }
+    }
 
     if (showDialog) {
         AlertDialog(
@@ -294,7 +300,129 @@ fun AccountScreenContent(
             tonalElevation = 4.dp
         )
     }
+}
+
+@Composable
+fun CompactUserStats(userGameList: List<GameEntry>) {
+    val totalHours = userGameList.sumOf { it.hoursPlayed }
+    val completedGames = userGameList.count { it.status.lowercase() == "completado" }
+    val averageRating = userGameList.mapNotNull { it.rating }.average()
+        .takeIf { !it.isNaN() }?.toInt() ?: 0
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        StatItem(title = "Horas jugadas", value = "${totalHours}h")
+        StatItem(title = "Media de nota", value = "$averageRating / 100")
+        StatItem(title = "Completados", value = "$completedGames")
     }
+}
+
+
+@Composable
+fun StatItem(title: String, value: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.LightGray
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleLarge,
+            color = naranja
+        )
+    }
+}
+
+@Composable
+fun ExpandableGameCard(game: GameEntry) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Card(
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = grisClaro),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+            .clickable { expanded = !expanded }
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    AsyncImage(
+                        model = game.imageUrl,
+                        contentDescription = game.name,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(60.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                    )
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Column {
+                        Text(
+                            text = game.name,
+                            color = Color.White,
+                            style = MaterialTheme.typography.bodyLarge,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = "${game.hoursPlayed}h jugadas",
+                            color = Color.LightGray,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.wrapContentWidth()
+                ) {
+                    Text(
+                        text = game.rating?.toString() ?: "-",
+                        color = naranja,
+                        style = MaterialTheme.typography.headlineSmall,
+                        modifier = Modifier.padding(end = 4.dp)
+                    )
+                    Icon(
+                        imageVector = if (expanded) Icons.Filled.KeyboardArrowDown else Icons.Filled.KeyboardArrowRight,
+                        contentDescription = "Desplegar",
+                        tint = Color.White
+                    )
+                }
+            }
+
+            if (expanded && !game.review.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = game.review,
+                    color = Color.White,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+    }
+}
+
+
+
+
+
+
 
 
 
