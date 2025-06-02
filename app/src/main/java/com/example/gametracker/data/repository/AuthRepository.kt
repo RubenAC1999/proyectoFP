@@ -17,12 +17,27 @@ object AuthRepository {
         try {
             val authResult = auth.createUserWithEmailAndPassword(email, password).await()
 
-            // Actualiza usuario
             val profileUpdates = UserProfileChangeRequest.Builder().setDisplayName(username).build()
             authResult.user?.updateProfile(profileUpdates)?.await()
 
             val firebaseUser = authResult.user
             if (firebaseUser != null) {
+                val userData = mapOf(
+                    "uid" to firebaseUser.uid,
+                    "displayName" to username,
+                    "email" to email,
+                    "role" to "user",
+                    "createdAt" to com.google.firebase.Timestamp.now(),
+                    "hasReadWarning" to false,
+                    "warningMessage" to ""
+                )
+
+                com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                    .collection("users")
+                    .document(firebaseUser.uid)
+                    .set(userData)
+                    .await()
+
                 Result.success(firebaseUser)
             } else {
                 Result.failure(Exception("No se pudo obtener el usuario después del registro."))
@@ -31,6 +46,7 @@ object AuthRepository {
         } catch (ex: Exception) {
             Result.failure(ex)
         }
+
 
 
     suspend fun loginsUser(email: String, password: String): Result<FirebaseUser> =

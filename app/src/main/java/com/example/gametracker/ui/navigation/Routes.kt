@@ -8,4 +8,5 @@ object Routes {
     const val LIST = "list"
     const val ADMIN = "admin"
     const val GAME_DETAIL = "game_detail"
+    const val EXPLORE = "explore"
 }

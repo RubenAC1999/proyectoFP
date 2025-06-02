@@ -8,10 +8,12 @@ import retrofit2.http.Query
 
 interface RawgApiService {
     @GET("games")
-    suspend fun getGames(
+    suspend fun searchGames(
         @Query("key") apiKey: String,
-        @Query("page") page: Int = 1
+        @Query("search") query: String,
+        @Query("page_size") pageSize: Int = 10
     ): GameModel.GameResponse
+
 
     @GET("games")
     suspend fun getPopularGames(
@@ -24,7 +26,7 @@ interface RawgApiService {
     @GET("games")
     suspend fun getTopRatedGames(
         @Query("key") apiKey: String,
-        @Query("ordering") ordering: String = "-rating",
+        @Query("ordering") ordering: String = "-metacritic",
         @Query("page") page: Int = 1,
         @Query("page_size") pageSize: Int = 10
     ): GameModel.GameResponse
@@ -40,6 +42,26 @@ interface RawgApiService {
         @Path("id") gameId: Int,
         @Query("key") apiKey: String
     ): ScreenshotResponse
+
+    @GET("games")
+    suspend fun getGamesByGenre(
+        @Query("key") apiKey: String,
+        @Query("genres") genre: String,
+        @Query("page") page: Int = 1,
+        @Query("page_size") pageSize: Int = 10
+    ): GameModel.GameResponse
+
+    @GET("games")
+    suspend fun getGamesByYear(
+        @Query("key") apiKey: String,
+        @Query("dates") dates: String,
+        @Query("ordering") ordering: String,
+        @Query("page") page: Int = 1,
+        @Query("page_size") pageSize: Int = 10
+    ): GameModel.GameResponse
+
+
+
 
 
 }

@@ -78,8 +78,8 @@ fun HomeScreenContent(navController: NavController, userViewModel: UserViewModel
     }
 
     LaunchedEffect(apiKey) {
-        gameViewModel.loadTopRateGames(apiKey)
-        gameViewModel.loadMostPopularGames(apiKey)
+        gameViewModel.loadPopularGames(apiKey)
+        gameViewModel.loadTopRatedGames(apiKey)
     }
 
     var showWarningDialog by remember { mutableStateOf(false) }
@@ -330,7 +330,7 @@ fun HomeScreenContent(navController: NavController, userViewModel: UserViewModel
             )
             NavigationBarItem(
                 selected = false,
-                onClick = { /* Buscar */ },
+                onClick = { navController.navigate(Routes.EXPLORE) },
                 icon = { Icon(Icons.Default.Search, contentDescription = "Search") },
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = hueso,

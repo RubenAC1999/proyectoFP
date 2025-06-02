@@ -21,6 +21,7 @@ import com.example.gametracker.data.repository.AuthRepository
 import com.example.gametracker.ui.navigation.Routes
 import com.example.gametracker.ui.screens.AccountScreenContent
 import com.example.gametracker.ui.screens.AdminPanelScreenContent
+import com.example.gametracker.ui.screens.ExploreScreenContent
 import com.example.gametracker.ui.screens.GameDetailScreenContent
 import com.example.gametracker.ui.screens.HomeScreenContent
 import com.example.gametracker.ui.screens.ListScreenContent
@@ -85,6 +86,7 @@ class MainActivity : ComponentActivity() {
                             userId = userId
                         )
                     }
+                    composable(Routes.EXPLORE) { ExploreScreenContent(gameViewModel, apiKey, navController) }
                 }
             }
         }

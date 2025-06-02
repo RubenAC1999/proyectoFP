@@ -1,5 +1,6 @@
 package com.example.gametracker.ui.screens
 
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -50,6 +51,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.gametracker.R
 import com.example.gametracker.ui.navigation.Routes
 import com.example.gametracker.viewmodel.AuthViewModel
+import com.google.firebase.auth.FirebaseAuth
 
 
 @Composable
@@ -251,6 +253,10 @@ fun LoginScreenContent(navController: NavController, viewModel: AuthViewModel) {
                         textDecoration = TextDecoration.Underline,
                     )
                 )
+
+                val user = FirebaseAuth.getInstance().currentUser
+                Log.d("DEBUG", "Usuario actual: ${user?.email ?: "null"}")
+
             }
         }
     }

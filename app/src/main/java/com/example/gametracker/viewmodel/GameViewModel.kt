@@ -6,11 +6,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gametracker.data.remote.RetrofitInstance
+import com.example.gametracker.data.repository.GameRepository
 import com.example.gametracker.model.GameModel
 import com.example.gametracker.model.Screenshot
 import kotlinx.coroutines.launch
 
-class GameViewModel: ViewModel() {
+class GameViewModel : ViewModel() {
+
+    private val repository = GameRepository()
+
     private val _topRatedGames = mutableStateOf<List<GameModel.Game>>(emptyList())
     val topRatedGames: State<List<GameModel.Game>> get() = _topRatedGames
 
@@ -23,68 +27,141 @@ class GameViewModel: ViewModel() {
     private val _screenshots = mutableStateOf<List<Screenshot>>(emptyList())
     val screenshots: State<List<Screenshot>> get() = _screenshots
 
-    fun loadTopRateGames(apiKey: String) {
+    private val _genreGamesMap = mutableStateOf<Map<String, List<GameModel.Game>>>(emptyMap())
+    val genreGamesMap: State<Map<String, List<GameModel.Game>>> get() = _genreGamesMap
+
+    private val _searchResults = mutableStateOf<List<GameModel.Game>>(emptyList())
+    val searchResults: State<List<GameModel.Game>> get() = _searchResults
+
+    private val _gamesByYear = mutableStateOf<Map<String, List<GameModel.Game>>>(emptyMap())
+    val gamesByYear: State<Map<String, List<GameModel.Game>>> get() = _gamesByYear
+
+
+    fun loadTopRatedGames(apiKey: String) {
         viewModelScope.launch {
             try {
-                val response = RetrofitInstance.api.getTopRatedGames(
-                    apiKey = apiKey,
-                    ordering = "-metacritic"
-                )
-                // Log para inspeccionar la respuesta
-                if (response.results.isNotEmpty()) {
-                    // Esto imprimirá la respuesta completa de la API, incluyendo el campo developer
-                    Log.d("GameViewModel", "Respuesta de juegos mejor valorados: ${response.results}")
-                }
-
-                _topRatedGames.value = response.results
+                val result = repository.getTopRatedGames(apiKey)
+                _topRatedGames.value = result
             } catch (e: Exception) {
-                Log.e("GameViewModel", "Error al cargar los más valorados ${e.message}")
+                Log.e("GameViewModel", "Error loading top rated games: ${e.message}")
             }
         }
     }
 
-    fun loadMostPopularGames(apiKey: String) {
+    fun loadPopularGames(apiKey: String) {
         viewModelScope.launch {
             try {
-                val response = RetrofitInstance.api.getPopularGames(
-                    apiKey = apiKey,
-                    ordering = "-added"
-                )
-                _popularGames.value = response.results
+                val result = repository.getPopularGames(apiKey)
+                _popularGames.value = result
             } catch (e: Exception) {
-                Log.e("GameViewModel", "Error al cargar los más populares: ${e.message}")
+                Log.e("GameViewModel", "Error loading popular games: ${e.message}")
+            }
+        }
+    }
+
+    fun loadGameDetail(apiKey: String, gameId: Int) {
+        viewModelScope.launch {
+            try {
+                val detail = repository.getGameDetail(apiKey, gameId)
+                _gameDetail.value = detail
+            } catch (e: Exception) {
+                Log.e("GameViewModel", "Error loading game detail: ${e.message}")
+            }
+        }
+    }
+
+    fun loadGameScreenshots(apiKey: String, gameId: Int) {
+        viewModelScope.launch {
+            try {
+                val result = repository.getGameScreenshots(apiKey, gameId)
+                _screenshots.value = result
+            } catch (e: Exception) {
+                Log.e("GameViewModel", "Error loading screenshots: ${e.message}")
             }
         }
     }
 
     fun getGameById(id: Int): GameModel.Game? {
-        val gameFromTopRated = _topRatedGames.value.find { it.id == id }
-
-        if(gameFromTopRated != null) return gameFromTopRated
-
-        val gameFromPopular = _popularGames.value.find { it.id == id }
-        if (gameFromPopular != null) return gameFromPopular
-
-        return null
+        return topRatedGames.value.find { it.id == id }
+            ?: popularGames.value.find { it.id == id }
     }
 
-    suspend fun loadGameDetail(apiKey: String, gameId: Int) {
-        try {
-            val detail = RetrofitInstance.api.getGameDetail(gameId, apiKey)
-            _gameDetail.value = detail
-        } catch (e: Exception) {
-            Log.e("GameViewModel", "Error al cargar detalle del juego.")
+    fun clearSearchResults() {
+        _searchResults.value = emptyList()
+    }
+
+    fun loadGamesByGenres(apiKey: String) {
+        if (_genreGamesMap.value.isNotEmpty()) return
+
+        viewModelScope.launch {
+            val genres = listOf("action", "adventure", "indie", "role-playing-games-rpg")
+            val results = mutableMapOf<String, List<GameModel.Game>>()
+
+            for (genre in genres) {
+                try {
+                    val response = RetrofitInstance.api.getGamesByGenre(apiKey, genre)
+                    val displayName = when (genre) {
+                        "r" +
+                                "ole-playing-games-rpg" -> "RPG"
+
+                        else -> genre.replaceFirstChar { it.uppercase() }
+                    }
+                    results[displayName] = response.results
+                } catch (e: Exception) {
+                    Log.e("GameViewModel", "Error al cargar juegos de $genre: ${e.message}")
+                }
+            }
+
+            _genreGamesMap.value = results
         }
     }
 
-    suspend fun loadGameScreenshots(apiKey: String, gameId: Int) {
-        try {
-            val response = RetrofitInstance.api.getGameScreenshots(gameId, apiKey)
-            _screenshots.value = response.results
-        } catch (e: Exception) {
-            Log.e("GameViewModel", "Error al cargar las capturas")
+
+    fun searchGames(apiKey: String, query: String) {
+        viewModelScope.launch {
+            try {
+                val response = RetrofitInstance.api.searchGames(apiKey, query)
+                _searchResults.value = response.results
+            } catch (e: Exception) {
+                _searchResults.value = emptyList()
+            }
         }
     }
 
+    fun loadGamesByYear(apiKey: String) {
+        viewModelScope.launch {
+            val years = listOf("2024", "2023", "2022")
+            val results = mutableMapOf<String, List<GameModel.Game>>()
+
+            for (year in years) {
+                try {
+                    val ordering = if (year == "2024") "-added" else "-metacritic"
+                    val dates = "$year-01-01,$year-12-31"
+
+                    val response = RetrofitInstance.api.getGamesByYear(
+                        apiKey = apiKey,
+                        dates = dates,
+                        ordering = ordering,
+                        pageSize = 20
+                    )
+
+                    val sortedGames = if (year == "2024") {
+                        response.results.sortedByDescending { it.added }
+                    } else {
+                        response.results.filter { it.metacritic != null }
+                            .sortedByDescending { it.metacritic }
+                    }
+
+                    Log.d("GameViewModel", "Cargados ${sortedGames.size} juegos para $year")
+                    results["Mejores de $year"] = sortedGames
+
+                } catch (e: Exception) {
+                    Log.e("GameViewModel", "Error al cargar juegos del año $year: ${e.message}")
+                }
+            }
+
+            _gamesByYear.value = results
+        }
+    }
 
 }

@@ -17,6 +17,8 @@ class GameModel {
         val imageUrl: String?,
         val rating: Float,
         val metacritic: Int?,
+        @SerializedName("added")
+        val added: Int? = null,
         val developers: List<Developer>,
         val publishers: List<Publisher>,
         val genres: List<Genre>,
