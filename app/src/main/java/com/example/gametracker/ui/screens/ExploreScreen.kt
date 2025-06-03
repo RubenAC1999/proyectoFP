@@ -21,7 +21,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Report
 import androidx.compose.material3.Card
@@ -171,7 +170,6 @@ fun ExploreScreenContent(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 🎮 Filtro por género
             Text("Filtrar por género", color = hueso, style = MaterialTheme.typography.titleMedium)
             Row(
                 modifier = Modifier
@@ -244,7 +242,10 @@ fun ExploreScreenContent(
                 onUserReport = { user ->
                     // lógica para reportar
                 },
-                navController = navController
+                navController = navController,
+                gameViewModel,
+                userViewModel,
+                apiKey
             )
         }
     }
@@ -253,86 +254,92 @@ fun ExploreScreenContent(
 
 
 @Composable
-    fun GameCard(game: GameModel.Game?, onClick: () -> Unit, isLoading: Boolean = false) {
-        val shape = RoundedCornerShape(8.dp)
+fun GameCard(game: GameModel.Game?, onClick: () -> Unit, isLoading: Boolean = false) {
+    val shape = RoundedCornerShape(8.dp)
 
-        Column(
+    Column(
+        modifier = Modifier
+            .padding(8.dp)
+            .width(120.dp)
+            .clip(shape)
+            .background(grisClaro) // Fondo directamente configurado
+            .clickable(enabled = !isLoading) { if (game != null) onClick() }
+    ) {
+        AsyncImage(
+            model = game?.imageUrl ?: "",
+            contentDescription = game?.name ?: "placeholder",
+            contentScale = ContentScale.Crop,
             modifier = Modifier
-                .padding(8.dp)
-                .width(120.dp)
-                .clip(shape)
-                .background(grisClaro)
-                .clickable(enabled = !isLoading) { if (game != null) onClick() }
-        ) {
-            AsyncImage(
-                model = game?.imageUrl ?: "",
-                contentDescription = game?.name ?: "placeholder",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .height(120.dp)
-                    .fillMaxWidth()
-                    .placeholder(
-                        visible = isLoading,
-                        highlight = PlaceholderHighlight.shimmer(),
-                        color = Color.Gray
-                    )
-            )
+                .height(120.dp)
+                .fillMaxWidth()
+                .placeholder(
+                    visible = isLoading,
+                    highlight = PlaceholderHighlight.shimmer(),
+                    color = Color.Gray
+                )
+        )
 
-            Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-            Text(
-                text = game?.name ?: "",
-                color = naranja,
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp)
-                    .placeholder(
-                        visible = isLoading,
-                        highlight = PlaceholderHighlight.shimmer(),
-                        color = Color.Gray
-                    )
-            )
-
-
-        }
+        Text(
+            text = game?.name ?: "",
+            color = naranja,
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp)
+                .placeholder(
+                    visible = isLoading,
+                    highlight = PlaceholderHighlight.shimmer(),
+                    color = Color.Gray
+                )
+        )
     }
+}
 
 @Composable
 fun SearchGameCard(game: GameModel.Game, onClick: () -> Unit) {
     Card(
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(16.dp),
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
-            .clickable { onClick() }
+            .clickable { onClick() },
+        colors = androidx.compose.material3.CardDefaults.cardColors(
+            containerColor = grisClaro
+        )
     ) {
-        Row(modifier = Modifier.padding(12.dp)) {
+        Row(modifier = Modifier.padding(16.dp)) {
             AsyncImage(
                 model = game.imageUrl,
                 contentDescription = game.name,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
-                    .height(80.dp)
-                    .width(80.dp)
+                    .size(80.dp)
                     .clip(RoundedCornerShape(8.dp))
             )
             Spacer(modifier = Modifier.width(12.dp))
-            Column {
-                Text(game.name, style = MaterialTheme.typography.titleMedium, color = naranja)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = game.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = naranja,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
                 Text(
                     text = game.genres.firstOrNull()?.name ?: "Sin género",
                     style = MaterialTheme.typography.bodySmall,
-                    color = grisClaro
+                    color = hueso
                 )
             }
         }
-
     }
 }
+
 
 @Composable
 fun UserSearchCard(
@@ -342,16 +349,21 @@ fun UserSearchCard(
     onReport: () -> Unit
 ) {
     Card(
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(16.dp),
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
             .clickable {
                 navController.navigate("public_profile/${user.uid}")
-            }
+            },
+        colors = androidx.compose.material3.CardDefaults.cardColors(
+            containerColor = grisClaro
+        )
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             AsyncImage(
@@ -365,14 +377,17 @@ fun UserSearchCard(
             Spacer(modifier = Modifier.width(12.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(user.displayName, style = MaterialTheme.typography.titleMedium, color = naranja)
-                Text(user.email, style = MaterialTheme.typography.bodySmall, color = grisClaro)
+                Text(
+                    user.displayName,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = naranja
+                )
+                Text(
+                    user.email,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = hueso
+                )
             }
-
-            IconButton(onClick = { navController.navigate("public_profile/${user.uid}") }) {
-                Icon(Icons.Default.Person, contentDescription = "Ver perfil", tint = naranja)
-            }
-
 
             IconButton(onClick = onFollow) {
                 Icon(Icons.Default.PersonAdd, contentDescription = "Seguir", tint = Color.Green)
@@ -384,6 +399,8 @@ fun UserSearchCard(
         }
     }
 }
+
+
 
 @Composable
 fun SearchOverlay(
@@ -397,7 +414,10 @@ fun SearchOverlay(
     onGameClick: (GameModel.Game) -> Unit,
     onUserFollow: (UserModel) -> Unit,
     onUserReport: (UserModel) -> Unit,
-    navController: NavController
+    navController: NavController,
+    gameViewModel: GameViewModel,
+    userViewModel: UserViewModel,
+    apiKey: String
 ) {
     Box(
         modifier = Modifier
@@ -409,7 +429,17 @@ fun SearchOverlay(
             Spacer(modifier = Modifier.height(50.dp))
             TextField(
                 value = searchQuery,
-                onValueChange = onQueryChange,
+                onValueChange = { query ->
+                    onQueryChange(query)
+                    if (selectedTab == "Juegos" && query.length > 1) {
+                        gameViewModel.searchGames(query, apiKey)  // Buscar juegos
+                    } else if (selectedTab == "Usuarios" && query.length > 1) {
+                        userViewModel.searchUsers(query)  // Buscar usuarios
+                    } else {
+                        gameViewModel.clearSearchResults()
+                        userViewModel.clearSearchResults()
+                    }
+                },
                 placeholder = { Text("Buscar...", color = Color.Gray) },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -427,6 +457,7 @@ fun SearchOverlay(
                 ),
                 singleLine = true
             )
+
 
             Row(
                 horizontalArrangement = Arrangement.SpaceEvenly,
@@ -470,6 +501,7 @@ fun SearchOverlay(
         }
     }
 }
+
 
 
 
