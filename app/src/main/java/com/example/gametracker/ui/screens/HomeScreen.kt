@@ -415,7 +415,6 @@ fun HomeScreenPreview() {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // TextField para búsqueda, usando el estado estático
                 TextField(
                     value = searchQuery.value,
                     onValueChange = { searchQuery.value = it },

@@ -1,6 +1,8 @@
 package com.example.gametracker.data.repository
 
+import android.util.Log
 import com.example.gametracker.data.remote.RetrofitInstance
+import com.example.gametracker.data.remote.RetrofitInstance.api
 import com.example.gametracker.model.GameModel
 import com.example.gametracker.model.Screenshot
 
@@ -38,4 +40,15 @@ class GameRepository {
                 emptyList()
             }
         }
+
+    suspend fun searchGames(query: String, apiKey: String): List<GameModel.Game> {
+        val cleanQuery = query.trim().replace(" ", "+")  // ← AÑADE ESTA LÍNEA
+        Log.d("GameRepository", "Buscando juegos con: $cleanQuery")
+
+        val response = api.searchGames(apiKey, cleanQuery)  // ← USA cleanQuery
+
+        return response.results
     }
+
+
+}

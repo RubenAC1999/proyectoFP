@@ -26,6 +26,7 @@ import com.example.gametracker.ui.screens.GameDetailScreenContent
 import com.example.gametracker.ui.screens.HomeScreenContent
 import com.example.gametracker.ui.screens.ListScreenContent
 import com.example.gametracker.ui.screens.LoginScreenContent
+import com.example.gametracker.ui.screens.PublicProfileScreenContent
 import com.example.gametracker.ui.screens.RegisterScreenContent
 import com.example.gametracker.viewmodel.AuthViewModel
 import com.example.gametracker.viewmodel.AuthViewModelFactory
@@ -86,7 +87,11 @@ class MainActivity : ComponentActivity() {
                             userId = userId
                         )
                     }
-                    composable(Routes.EXPLORE) { ExploreScreenContent(gameViewModel, apiKey, navController) }
+                    composable(Routes.EXPLORE) { ExploreScreenContent(gameViewModel, userViewModel, apiKey, navController) }
+                    composable("public_profile/{userId}") { backStackEntry ->
+                        val userId = backStackEntry.arguments?.getString("userId") ?: return@composable
+                        PublicProfileScreenContent(userId, userViewModel, gameListViewModel, navController)
+                    }
                 }
             }
         }

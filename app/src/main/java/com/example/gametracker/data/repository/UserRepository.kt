@@ -10,8 +10,12 @@ class UserRepository {
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
 
+    private val usersCollection = db.collection("users")
+
+
     suspend fun createUserInFirestore(user: UserModel, userId: String, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
        val userRef = db.collection("users").document(userId)
+
 
         val userData = mapOf(
             "displayName" to user.displayName,
@@ -91,4 +95,18 @@ class UserRepository {
             .addOnSuccessListener { onComplete(true) }
             .addOnFailureListener { onComplete(false) }
     }
+
+    suspend fun getUserById(userId: String): UserModel? {
+        return try {
+            val snapshot = usersCollection.document(userId).get().await()
+            if (snapshot.exists()) {
+                snapshot.toObject(UserModel::class.java)
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
 }

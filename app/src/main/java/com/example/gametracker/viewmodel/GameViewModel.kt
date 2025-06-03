@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gametracker.data.remote.RetrofitInstance
 import com.example.gametracker.data.repository.GameRepository
+import com.example.gametracker.model.GameEntry
 import com.example.gametracker.model.GameModel
 import com.example.gametracker.model.Screenshot
 import kotlinx.coroutines.launch
@@ -35,6 +36,9 @@ class GameViewModel : ViewModel() {
 
     private val _gamesByYear = mutableStateOf<Map<String, List<GameModel.Game>>>(emptyMap())
     val gamesByYear: State<Map<String, List<GameModel.Game>>> get() = _gamesByYear
+
+    private val _recommendedGames = mutableStateOf<List<GameModel.Game>>(emptyList())
+    val recommendedGames: State<List<GameModel.Game>> get() = _recommendedGames
 
 
     fun loadTopRatedGames(apiKey: String) {
@@ -117,16 +121,22 @@ class GameViewModel : ViewModel() {
     }
 
 
-    fun searchGames(apiKey: String, query: String) {
+    fun searchGames(query: String, apiKey: String) {
+        Log.d("GameViewModel", "Buscando juegos con query: $query")
+
         viewModelScope.launch {
             try {
-                val response = RetrofitInstance.api.searchGames(apiKey, query)
-                _searchResults.value = response.results
+                val results = repository.searchGames(query, apiKey)
+                Log.d("GameViewModel", "Resultados obtenidos: ${results.size}")
+                _searchResults.value = results
             } catch (e: Exception) {
+                Log.e("GameViewModel", "Error al buscar juegos: ${e.message}")
                 _searchResults.value = emptyList()
             }
         }
     }
+
+
 
     fun loadGamesByYear(apiKey: String) {
         viewModelScope.launch {
@@ -164,4 +174,35 @@ class GameViewModel : ViewModel() {
         }
     }
 
+    fun getFavoriteGenres(entries: List<GameEntry>): List<String> {
+        return entries.flatMap { it.genres ?: emptyList() }
+            .groupingBy { it }
+            .eachCount()
+            .toList()
+            .sortedByDescending { it.second }
+            .map { it.first }
+            .take(2)
+    }
+
+
+    fun loadPersonalRecommendations(apiKey: String, genres: List<String>) {
+        viewModelScope.launch {
+            val recommendedGames = mutableListOf<GameModel.Game>()
+
+            for (genre in genres) {
+                try {
+                    val response = RetrofitInstance.api.getGamesByGenre(apiKey, genre.lowercase())
+                    val sortedGames = response.results
+                        .filter { it.metacritic != null }
+                        .sortedByDescending { it.metacritic }
+
+                    recommendedGames.addAll(sortedGames.take(5)) // top 5 por género
+                } catch (e: Exception) {
+                    Log.e("GameViewModel", "Error loading recommendations: ${e.message}")
+                }
+            }
+
+            _recommendedGames.value = recommendedGames.distinctBy { it.id }
+        }
+    }
 }
