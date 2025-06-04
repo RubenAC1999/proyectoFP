@@ -24,6 +24,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -32,20 +33,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.gametracker.model.UserModel
+import com.example.gametracker.ui.theme.darkGray
 import com.example.gametracker.ui.theme.hueso
 import com.example.gametracker.ui.theme.naranja
 import com.example.gametracker.viewmodel.UserViewModel
 import com.google.firebase.Timestamp
 import java.text.SimpleDateFormat
 import java.util.Calendar
-import java.util.Date
 import java.util.Locale
 
 
@@ -53,21 +53,19 @@ import java.util.Locale
 @Composable
 fun AdminPanelScreenContent(userViewModel: UserViewModel = viewModel()) {
     val users by userViewModel.allUsers.collectAsState()
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         userViewModel.loadAllUsers()
     }
 
     var searchQuery by remember { mutableStateOf("") }
-
-
     val filteredUsers = users.filter {
-        (it.role == "casual") && (
-        it.displayName.contains(searchQuery, ignoreCase = true) ||
-                it.email.contains(searchQuery, ignoreCase = true)
+        it.role == "casual" && (
+                it.displayName.contains(searchQuery, ignoreCase = true) ||
+                        it.email.contains(searchQuery, ignoreCase = true)
                 )
     }
-
 
     var showWarningDialog by remember { mutableStateOf(false) }
     var warningMessage by remember { mutableStateOf("") }
@@ -75,13 +73,11 @@ fun AdminPanelScreenContent(userViewModel: UserViewModel = viewModel()) {
 
     var showDatePicker by remember { mutableStateOf(false) }
     var selectedUserToBan by remember { mutableStateOf<UserModel?>(null) }
-    var selectedDate by remember { mutableStateOf<Date?>(null) }
-
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.DarkGray)
+            .background(darkGray)
             .padding(16.dp)
     ) {
         Text(
@@ -90,7 +86,7 @@ fun AdminPanelScreenContent(userViewModel: UserViewModel = viewModel()) {
             color = naranja
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedTextField(
             value = searchQuery,
@@ -116,56 +112,43 @@ fun AdminPanelScreenContent(userViewModel: UserViewModel = viewModel()) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 6.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF2C2C2C))
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF2C2C2C)),
+                    shape = MaterialTheme.shapes.medium
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column {
-                            Text(user.displayName, color = hueso)
-                            Text(
-                                user.email,
-                                color = Color.Gray,
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-                        if (user.isBanned == true && user.bannedUntil != null) {
-                           val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                            val formattedDate = formatter.format(user.bannedUntil.toDate())
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text(user.displayName, color = hueso, style = MaterialTheme.typography.bodyLarge)
+                                Text(user.email, color = Color.LightGray, style = MaterialTheme.typography.labelSmall)
+                                if (user.isBanned == true && user.bannedUntil != null) {
+                                    val formattedDate = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                                        .format(user.bannedUntil.toDate())
+                                    Text("Suspendido hasta: $formattedDate", color = Color.Red, style = MaterialTheme.typography.labelSmall)
+                                }
+                                if (!user.warningMessage.isNullOrBlank()) {
+                                    Text("Aviso: ${user.warningMessage}", color = Color.Yellow, style = MaterialTheme.typography.labelSmall)
+                                }
+                            }
 
-                            Text(
-                                text = "Reportado: $formattedDate",
-                                color = Color.Red,
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
+                            Row {
+                                IconButton(onClick = {
+                                    userToWarn = user
+                                    warningMessage = ""
+                                    showWarningDialog = true
+                                }) {
+                                    Icon(Icons.Default.Warning, contentDescription = "Avisar", tint = Color.Yellow)
+                                }
 
-                        if (!user.warningMessage.isNullOrEmpty()) {
-                            Text(
-                                text = "Aviso: ${user.warningMessage}",
-                                color = Color.Yellow,
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-                    }
-                    Row {
-                        IconButton(onClick = {
-                            userToWarn = user
-                            warningMessage = ""
-                            showWarningDialog = true
-                        }) {
-                            Icon(Icons.Default.Warning, contentDescription = "Avisar", tint = Color.Yellow)
-                        }
-
-                        IconButton(onClick = {
-                            selectedUserToBan = user
-                            showDatePicker = true
-                        }) {
-                            Icon(Icons.Default.Lock, contentDescription = "Reportar", tint = Color.Red )
+                                IconButton(onClick = {
+                                    selectedUserToBan = user
+                                    showDatePicker = true
+                                }) {
+                                    Icon(Icons.Default.Lock, contentDescription = "Suspender", tint = Color.Red)
+                                }
+                            }
                         }
                     }
                 }
@@ -179,9 +162,7 @@ fun AdminPanelScreenContent(userViewModel: UserViewModel = viewModel()) {
                     userToWarn = null
                     warningMessage = ""
                 },
-                title = {
-                    Text("Enviar aviso", color = naranja)
-                },
+                title = { Text("Enviar aviso", color = naranja) },
                 text = {
                     OutlinedTextField(
                         value = warningMessage,
@@ -199,64 +180,51 @@ fun AdminPanelScreenContent(userViewModel: UserViewModel = viewModel()) {
                     )
                 },
                 confirmButton = {
-                    androidx.compose.material3.TextButton(onClick = {
+                    TextButton(onClick = {
                         userToWarn?.let {
                             userViewModel.sendWarningToUser(it.uid, warningMessage)
                         }
                         showWarningDialog = false
-                        warningMessage = ""
-                        userToWarn = null
                     }) {
                         Text("Enviar", color = naranja)
                     }
                 },
                 dismissButton = {
-                    androidx.compose.material3.TextButton(onClick = {
+                    TextButton(onClick = {
                         showWarningDialog = false
-                        warningMessage = ""
-                        userToWarn = null
                     }) {
                         Text("Cancelar", color = Color.Gray)
                     }
                 },
-
-                containerColor = Color(0xFF2C2C2C)
+                containerColor = Color(0xFF2C2C2C),
+                titleContentColor = naranja,
+                textContentColor = hueso
             )
         }
 
         if (showDatePicker && selectedUserToBan != null) {
-            val context = LocalContext.current
             val calendar = Calendar.getInstance()
-
             DatePickerDialog(
                 context,
-                { _, year, month, dayOfMonth ->
-                    calendar.set(year, month, dayOfMonth, 23, 59, 59)
-                    selectedDate = calendar.time
+                { _, year, month, day ->
+                    calendar.set(year, month, day, 23, 59, 59)
+                    val date = calendar.time
 
                     selectedUserToBan?.let {
                         userViewModel.reportUser(
                             userId = it.uid,
-                            untilDate = Timestamp(calendar.time),
-                            message = "Tu cuenta ha sido suspendida hasta la fecha indicada."
+                            untilDate = Timestamp(date),
+                            message = "Tu cuenta ha sido suspendida hasta $date."
                         )
                     }
 
                     showDatePicker = false
                     selectedUserToBan = null
                 },
-
                 calendar.get(Calendar.YEAR),
                 calendar.get(Calendar.MONTH),
                 calendar.get(Calendar.DAY_OF_MONTH)
             ).show()
-        }
-
-        LazyColumn {
-            items(filteredUsers) { user ->
-                Text("DEBUG - isBanned=${user.isBanned}, bannedUntil=${user.bannedUntil?.toDate()}")
-                // Aquí va tu Card normalmente
-            }
         }
     }
 }

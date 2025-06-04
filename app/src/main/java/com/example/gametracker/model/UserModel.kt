@@ -17,6 +17,7 @@ data class UserModel(
     val blockMessage: String? = "",
     val warningMessage: String? = "",
     val hasReadWarning: Boolean = false,
+    val isPrivate: Boolean = false
 ) {
 
 

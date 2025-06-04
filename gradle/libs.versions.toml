@@ -17,6 +17,7 @@ firebaseAuthKtx = "23.2.0"
 uiText = "1.7.8"
 compose = "1.5.4"  # <-- Actualiza a esta versión o superior
 compose-compiler = "1.5.3"
+firebaseStorageKtx = "21.0.2"
 
 
 [libraries]
@@ -47,6 +48,7 @@ firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "fir
 firebase-crashlytics = {module = "com.google.firebase:firebase-crashlytics" }
 firebase-auth-ktx = { group = "com.google.firebase", name = "firebase-auth-ktx", version.ref = "firebaseAuthKtx" }
 ui = { module = "androidx.compose.ui:ui", version.ref = "uiText" }
+firebase-storage-ktx = { group = "com.google.firebase", name = "firebase-storage-ktx", version.ref = "firebaseStorageKtx" }
 
 
 [plugins]

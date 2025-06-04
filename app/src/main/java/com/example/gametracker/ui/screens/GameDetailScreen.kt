@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
@@ -18,13 +19,17 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -167,22 +172,35 @@ fun GameDetailScreenContent(
                 Text("Metacritic: ${gameDetail.metacritic ?: "N/A"}", color = hueso)
             }
 
-            Button(onClick = { showDialog = true }) {
-                Text("Añadir a lista", color = hueso)
+            Button(
+                onClick = { showDialog = true },
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = naranja,
+                    contentColor = hueso
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Añadir a lista")
             }
+
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text(
-            text = gameDetail.description ?: "Sin descripción",
-            style = MaterialTheme.typography.bodyMedium,
-            color = hueso,
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(grisClaro)
+                .heightIn(min = 120.dp, max = 200.dp)
+                .background(grisClaro, RoundedCornerShape(8.dp))
                 .padding(12.dp)
-        )
+                .verticalScroll(rememberScrollState())
+        ) {
+            Text(
+                text = gameDetail.description ?: "Sin descripción",
+                style = MaterialTheme.typography.bodyMedium,
+                color = hueso
+            )
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -222,47 +240,68 @@ fun GameDetailScreenContent(
 }
 
 
-    @Composable
-    fun DropdownMenuField(
-        options: List<String>,
-        selectedOption: String,
-        onOptionSelected: (String) -> Unit
-    ) {
-        var expanded by remember { mutableStateOf(false) }
+@Composable
+fun DropdownMenuField(
+    options: List<String>,
+    selectedOption: String,
+    onOptionSelected: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
 
-        Box {
-            OutlinedTextField(
-                value = selectedOption,
-                onValueChange = {},
-                label = { Text("Estado") },
-                readOnly = true,
-                modifier = Modifier.fillMaxWidth(),
-                trailingIcon = {
-                    androidx.compose.material3.IconButton(onClick = { expanded = true }) {
-                        androidx.compose.material3.Icon(
-                            imageVector = androidx.compose.material.icons.Icons.Default.ArrowDropDown,
-                            contentDescription = "Expand"
-                        )
-                    }
-                }
-            )
-
-            androidx.compose.material3.DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false }
-            ) {
-                options.forEach { option ->
-                    androidx.compose.material3.DropdownMenuItem(
-                        text = { Text(option) },
-                        onClick = {
-                            onOptionSelected(option)
-                            expanded = false
-                        }
+    Box {
+        OutlinedTextField(
+            value = selectedOption,
+            onValueChange = {},
+            label = { Text("Estado", color = hueso) },
+            readOnly = true,
+            trailingIcon = {
+                IconButton(onClick = { expanded = true }) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowDropDown,
+                        contentDescription = "Expandir",
+                        tint = hueso
                     )
                 }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            colors = TextFieldDefaults.colors(
+                focusedTextColor = hueso,
+                unfocusedTextColor = hueso,
+                focusedLabelColor = hueso,
+                unfocusedLabelColor = hueso,
+                cursorColor = naranja,
+                focusedContainerColor = grisClaro,
+                unfocusedContainerColor = grisClaro,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent
+            )
+        )
+
+        androidx.compose.material3.DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(grisClaro)
+        ) {
+            options.forEach { option ->
+                androidx.compose.material3.DropdownMenuItem(
+                    onClick = {
+                        onOptionSelected(option)
+                        expanded = false
+                    },
+                    text = {
+                        Text(
+                            text = option,
+                            color = hueso
+                        )
+                    },
+                    modifier = Modifier.background(grisClaro)
+                )
             }
         }
     }
+}
+
+
 
 @Composable
 fun AddGameDialog(
@@ -280,31 +319,39 @@ fun AddGameDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            Button(onClick = {
-                val rating = ratingInput.toIntOrNull()
-                val hours = hoursInput.toIntOrNull() ?: 0
-
-                val updatedGame = gameEntry.copy(
-                    status = selectedStatus.lowercase(),
-                    rating = rating,
-                    hoursPlayed = hours,
-                    review = review
+            Button(
+                onClick = {
+                    val rating = ratingInput.toIntOrNull()
+                    val hours = hoursInput.toIntOrNull() ?: 0
+                    val updatedGame = gameEntry.copy(
+                        status = selectedStatus.lowercase(),
+                        rating = rating,
+                        hoursPlayed = hours,
+                        review = review
+                    )
+                    onAdd(updatedGame)
+                    onDismiss()
+                },
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = naranja,
+                    contentColor = Color.White
                 )
-                onAdd(updatedGame)
-                onDismiss()
-            }) {
+            ) {
                 Text("Añadir")
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancelar")
+                Text("Cancelar", color = naranja)
             }
         },
-        title = { Text("Añadir juego a la lista") },
+        title = {
+            Text("Añadir juego a la lista", color = naranja)
+        },
         text = {
             Column {
-                Text("Estado:")
+                Text("Estado:", color = hueso)
+
                 DropdownMenuField(
                     options = statusOptions,
                     selectedOption = selectedStatus,
@@ -316,8 +363,19 @@ fun AddGameDialog(
                 OutlinedTextField(
                     value = ratingInput,
                     onValueChange = { ratingInput = it },
-                    label = { Text("Puntuación (sobre 100)") },
-                    singleLine = true
+                    label = { Text("Puntuación (sobre 100)", color = hueso) },
+                    singleLine = true,
+                    colors = TextFieldDefaults.colors(
+                        focusedTextColor = hueso,
+                        unfocusedTextColor = hueso,
+                        cursorColor = naranja,
+                        focusedContainerColor = grisClaro,
+                        unfocusedContainerColor = grisClaro,
+                        focusedLabelColor = hueso,
+                        unfocusedLabelColor = hueso,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent
+                    )
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -325,8 +383,19 @@ fun AddGameDialog(
                 OutlinedTextField(
                     value = hoursInput,
                     onValueChange = { hoursInput = it },
-                    label = { Text("Horas jugadas") },
-                    singleLine = true
+                    label = { Text("Horas jugadas", color = hueso) },
+                    singleLine = true,
+                    colors = TextFieldDefaults.colors(
+                        focusedTextColor = hueso,
+                        unfocusedTextColor = hueso,
+                        cursorColor = naranja,
+                        focusedContainerColor = grisClaro,
+                        unfocusedContainerColor = grisClaro,
+                        focusedLabelColor = hueso,
+                        unfocusedLabelColor = hueso,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent
+                    )
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -334,10 +403,24 @@ fun AddGameDialog(
                 OutlinedTextField(
                     value = review,
                     onValueChange = { review = it },
-                    label = { Text("Opinión (opcional)") },
-                    maxLines = 4
+                    label = { Text("Opinión (opcional)", color = hueso) },
+                    maxLines = 4,
+                    colors = TextFieldDefaults.colors(
+                        focusedTextColor = hueso,
+                        unfocusedTextColor = hueso,
+                        cursorColor = naranja,
+                        focusedContainerColor = grisClaro,
+                        unfocusedContainerColor = grisClaro,
+                        focusedLabelColor = hueso,
+                        unfocusedLabelColor = hueso,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent
+                    )
                 )
             }
-        }
+        },
+        containerColor = darkGray,
+        titleContentColor = naranja,
+        textContentColor = hueso
     )
 }

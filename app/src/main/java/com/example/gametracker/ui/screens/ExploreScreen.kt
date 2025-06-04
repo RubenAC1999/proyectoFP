@@ -23,6 +23,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Report
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -67,7 +68,8 @@ fun ExploreScreenContent(
     gameViewModel: GameViewModel,
     userViewModel: UserViewModel,
     apiKey: String,
-    navController: NavController
+    navController: NavController,
+    launchWithSearch: Boolean = false
 ) {
     val genreGamesMap by gameViewModel.genreGamesMap
     val searchResults by gameViewModel.searchResults
@@ -83,7 +85,7 @@ fun ExploreScreenContent(
     var selectedTab by remember { mutableStateOf("Juegos") }
 
     var searchQuery by remember { mutableStateOf("") }
-    var showSearchOverlay by rememberSaveable { mutableStateOf(false) }
+    var showSearchOverlay by rememberSaveable { mutableStateOf(launchWithSearch) }
 
     val scrollState = rememberScrollState()
 
@@ -103,6 +105,8 @@ fun ExploreScreenContent(
         }
     }
 
+
+
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -113,28 +117,46 @@ fun ExploreScreenContent(
         ) {
             Spacer(modifier = Modifier.height(50.dp))
 
-            Box(
+            TextField(
+                value = "",
+                onValueChange = {},
+                placeholder = {
+                    Text(
+                        "Buscar juegos o usuarios...",
+                        color = Color.Gray,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Buscar",
+                        tint = hueso
+                    )
+                },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp)
+                    .height(52.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(grisClaro)
                     .clickable {
-                        Log.d("ExploreScreen", "Box clicked")
                         showSearchOverlay = true
-                    }
-                    .padding(horizontal = 16.dp),
-                contentAlignment = Alignment.CenterStart
-            ) {
-                Text("Buscar juegos o usuarios...", color = Color.Gray)
-            }
+                    },
+                enabled = false,
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = grisClaro,
+                    unfocusedContainerColor = grisClaro,
+                    disabledContainerColor = grisClaro,
+                    disabledTextColor = hueso,
+                    disabledIndicatorColor = Color.Transparent,
+                    disabledLeadingIconColor = hueso
+                )
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Filtro por año
             Text("Filtrar por año", color = hueso, style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
             Row(
@@ -354,6 +376,7 @@ fun UserSearchCard(
             .fillMaxWidth()
             .padding(vertical = 8.dp)
             .clickable {
+                Log.d("NAVEGACION", "UID del usuario al pulsar: ${user.uid}")
                 navController.navigate("public_profile/${user.uid}")
             },
         colors = androidx.compose.material3.CardDefaults.cardColors(

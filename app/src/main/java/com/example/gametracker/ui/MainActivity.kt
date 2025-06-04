@@ -3,15 +3,19 @@ package com.example.gametracker.ui
 
 import android.app.Application
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -66,8 +70,33 @@ class MainActivity : ComponentActivity() {
                     composable(Routes.HOME) { HomeScreenContent( navController, userViewModel, gameViewModel) }
                     composable(Routes.ACCOUNT) {
                         val user by userViewModel.user.collectAsState()
-                        AccountScreenContent(userViewModel, gameListViewModel, userRole = user?.role, navController)
+                        val userGameList by gameListViewModel.userGameList.collectAsState()
+                        val currentUser = AuthRepository.getCurrentUser()
+                        val context = LocalContext.current
+
+                        val launcher = rememberLauncherForActivityResult(
+                            contract = ActivityResultContracts.GetContent()
+                        ) { uri ->
+                            uri?.let { userViewModel.uploadProfilePicture(it) }
+                        }
+
+                        AccountScreenContent(
+                            user = user,
+                            userRole = user?.role ?: "",
+                            userGameList = userGameList,
+                            navController = navController,
+                            gameListViewModel = gameListViewModel,
+                            onUpdateProfile = { name, bio, isPrivate ->
+                                userViewModel.updateUserProfile(name, bio, isPrivate)
+                            },
+                            onDeleteGame = { gameEntry ->
+                                gameListViewModel.deleteGameById(gameEntry.id)
+                            },
+                            launcher = launcher,
+                            currentUser = currentUser
+                        )
                     }
+
                     composable(Routes.LIST) { ListScreenContent(navController) }
                     composable(Routes.ADMIN) {
                         AdminPanelScreenContent(userViewModel)
@@ -87,11 +116,35 @@ class MainActivity : ComponentActivity() {
                             userId = userId
                         )
                     }
-                    composable(Routes.EXPLORE) { ExploreScreenContent(gameViewModel, userViewModel, apiKey, navController) }
-                    composable("public_profile/{userId}") { backStackEntry ->
-                        val userId = backStackEntry.arguments?.getString("userId") ?: return@composable
-                        PublicProfileScreenContent(userId, userViewModel, gameListViewModel, navController)
+                    composable(
+                        route = "explore?showSearch={showSearch}",
+                        arguments = listOf(
+                            navArgument("showSearch") {
+                                defaultValue = "false"
+                            }
+                        )
+                    ) { backStackEntry ->
+                        val showSearch = backStackEntry.arguments?.getString("showSearch") == "true"
+                        ExploreScreenContent(
+                            gameViewModel = gameViewModel,
+                            userViewModel = userViewModel,
+                            apiKey = apiKey,
+                            navController = navController,
+                            launchWithSearch = showSearch
+                        )
                     }
+                    composable("public_profile/{userId}") { backStackEntry ->
+                        val userId = backStackEntry.arguments?.getString("userId") ?: ""
+                        Log.d("PublicProfile", "userId recibido: $userId") // <-- AÑADE ESTO TEMPORALMENTE
+                        PublicProfileScreenContent(
+                            userId = userId,
+                            userViewModel = userViewModel,
+                            gameListViewModel = gameListViewModel,
+                            navController = navController
+                        )
+                    }
+
+
                 }
             }
         }

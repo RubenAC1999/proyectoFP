@@ -1,5 +1,6 @@
 package com.example.gametracker.viewmodel
 
+import android.net.Uri
 import android.util.Log
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
@@ -12,7 +13,9 @@ import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -166,11 +169,15 @@ class UserViewModel : ViewModel() {
             .whereLessThanOrEqualTo("displayName", query + "\uf8ff")
             .get()
             .addOnSuccessListener { result ->
-                val users = result.mapNotNull { it.toObject(UserModel::class.java) }
-                Log.d("SearchUsers", "Resultados sin filtrar: ${users.size}")
+                val users = result.mapNotNull { doc ->
+                    val user = doc.toObject(UserModel::class.java)
+                    user.copy(uid = doc.id)
+                }
+                Log.d("SearchUsers", "Resultados encontrados: ${users.size}")
                 _searchResults.value = users
             }
             .addOnFailureListener {
+                Log.e("SearchUsers", "Error al buscar usuarios", it)
                 _searchResults.value = emptyList()
             }
     }
@@ -194,13 +201,69 @@ class UserViewModel : ViewModel() {
     }
 
     fun loadUserById(userId: String) {
+        if (userId.isBlank()) {
+            Log.e("UserViewModel", "ID de usuario vacío, no se puede cargar perfil público")
+            publicUser.value = null
+            return
+        }
+
         viewModelScope.launch {
-            val userData = userRepository.getUserById(userId)
-            publicUser.value = userData
+            try {
+                val doc = FirebaseFirestore.getInstance()
+                    .collection("users")
+                    .document(userId)
+                    .get()
+                    .await()
+
+                publicUser.value = doc.toObject(UserModel::class.java)
+            } catch (e: Exception) {
+                Log.e("UserViewModel", "Error al cargar usuario público", e)
+                publicUser.value = null
+            }
         }
     }
 
 
+    fun updateUserProfile(name: String, bio: String, isPrivate: Boolean) {
+        val uid = Firebase.auth.currentUser?.uid ?: return
+        val userRef = Firebase.firestore.collection("users").document(uid)
 
+        userRef.update(
+            mapOf(
+                "displayName" to name,
+                "bio" to bio,
+                "isPrivate" to isPrivate
+            )
+        ).addOnSuccessListener {
+            Log.d("UpdateProfile", "Perfil actualizado correctamente")
+        }.addOnFailureListener {
+            Log.e("UpdateProfile", "Error actualizando perfil", it)
+        }
+    }
+
+
+    fun uploadProfilePicture(uri: Uri) {
+        val uid = Firebase.auth.currentUser?.uid ?: return
+        val storageRef = FirebaseStorage.getInstance().reference
+            .child("profile_pictures/$uid.jpg")
+
+        viewModelScope.launch {
+            try {
+                storageRef.putFile(uri).await()
+                val downloadUrl = storageRef.downloadUrl.await().toString()
+
+                FirebaseFirestore.getInstance()
+                    .collection("users")
+                    .document(uid)
+                    .update("profilePicUrl", downloadUrl)
+                    .addOnSuccessListener {
+                        Log.d("UserViewModel", "Foto de perfil actualizada")
+                        loadUserData(uid) // Refrescar datos del usuario
+                    }
+            } catch (e: Exception) {
+                Log.e("UserViewModel", "Error subiendo foto", e)
+            }
+        }
+    }
 }
 

@@ -25,6 +25,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -46,10 +47,9 @@ fun PublicProfileScreenContent(
     val user = userViewModel.publicUser.value
     val userGames = userViewModel.userGameEntries.value
 
-    // Cargar datos si aún no se han cargado
     LaunchedEffect(userId) {
         userViewModel.loadUserById(userId)
-        userViewModel.loadUserGameEntries(userId)
+        userViewModel.loadUserGameEntries(userId) // <- ESTA LÍNEA NUNCA DEBE FALTAR
     }
 
     if (user == null) {
@@ -63,7 +63,6 @@ fun PublicProfileScreenContent(
             Text("Cargando perfil...", color = hueso)
         }
     } else {
-        // Mostrar con tu mismo diseño, sin controles de admin
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -82,68 +81,81 @@ fun PublicProfileScreenContent(
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                AsyncImage(
-                                    model = user.profilePicUrl,
-                                    contentDescription = "Foto de perfil",
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier
-                                        .size(72.dp)
-                                        .clip(CircleShape)
-                                        .background(darkGray)
-                                )
+                            AsyncImage(
+                                model = user.profilePicUrl,
+                                contentDescription = "Foto de perfil",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .size(72.dp)
+                                    .clip(CircleShape)
+                                    .background(darkGray)
+                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Text(
+                                text = user.displayName,
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = naranja
+                            )
+                        }
 
-                                Spacer(modifier = Modifier.width(16.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                                Text(
-                                    text = user.displayName,
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    color = naranja
-                                )
-                            }
+                        if (!user.bio.isNullOrBlank()) {
+                            Text(
+                                text = user.bio,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.LightGray
+                            )
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
                         CompactUserStats(userGameList = userGames)
-                        Spacer(modifier = Modifier.height(24.dp))
                     }
                 }
             }
 
-            // Mostrar sus juegos igual que en tu perfil
-            val groupedGames = userGames.groupBy { it.status.lowercase() }
-            val statusOrder = listOf("jugando", "completado", "dropeado", "wishlist")
-            val statusTitles = mapOf(
-                "jugando" to "Jugando actualmente",
-                "completado" to "Completados",
-                "dropeado" to "Abandonados",
-                "wishlist" to "Wishlist"
-            )
+            if (user.isPrivate) {
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text(
+                        text = "Este usuario tiene su lista en privado.",
+                        color = Color.LightGray,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+            } else {
+                val groupedGames = userGames.groupBy { it.status.lowercase() }
+                val statusOrder = listOf("jugando", "completado", "dropeado", "wishlist")
+                val statusTitles = mapOf(
+                    "jugando" to "Jugando actualmente",
+                    "completado" to "Completados",
+                    "dropeado" to "Abandonados",
+                    "wishlist" to "Wishlist"
+                )
 
-            statusOrder.forEach { statusKey ->
-                val baseList = groupedGames[statusKey].orEmpty()
-                val sortedList = baseList.sortedByDescending { it.addedAt }
+                statusOrder.forEach { statusKey ->
+                    val sortedList = groupedGames[statusKey].orEmpty().sortedByDescending { it.addedAt }
 
-                if (sortedList.isNotEmpty()) {
-                    item {
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Text(
-                            text = statusTitles[statusKey] ?: statusKey.capitalize(),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = hueso,
-                            modifier = Modifier.padding(vertical = 8.dp)
-                        )
-                    }
+                    if (sortedList.isNotEmpty()) {
+                        item {
+                            Spacer(modifier = Modifier.height(24.dp))
+                            Text(
+                                text = statusTitles[statusKey] ?: statusKey.capitalize(),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = hueso
+                            )
+                        }
 
-                    items(sortedList) { game ->
-                        ExpandableGameCard(game)
+                        items(sortedList) { game ->
+                            ExpandableGameCard(game)
+                        }
                     }
                 }
             }
         }
     }
 }
+
 
