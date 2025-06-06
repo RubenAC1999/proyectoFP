@@ -8,15 +8,26 @@ import com.google.firebase.ktx.Firebase
 class UserGameRepository {
     private val db = Firebase.firestore
 
-    fun addGamesToUserList(userId: String, game: GameEntry, onSuccess: () -> Unit, onError: (Exception) -> Unit) {
+    fun addGamesToUserList(
+        userId: String,
+        game: GameEntry,
+        onSuccess: () -> Unit,
+        onError: (Exception) -> Unit
+    ) {
+        if (userId.isBlank()) {
+            onError(IllegalArgumentException("El userId está vacío o es inválido"))
+            return
+        }
+
         db.collection("users")
             .document(userId)
             .collection("gameList")
             .document(game.id)
             .set(game)
             .addOnSuccessListener { onSuccess() }
-            .addOnFailureListener{ e -> onError(e) }
+            .addOnFailureListener { e -> onError(e) }
     }
+
 
     fun getGameStatusCounts(userId: String, onResult: (completed: Int, pending: Int, dropped: Int) -> Unit) {
         db.collection("users")

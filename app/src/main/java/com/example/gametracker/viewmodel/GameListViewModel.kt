@@ -34,13 +34,19 @@ class GameListViewModel: ViewModel() {
         }
     }
 
-    fun addGame(userId: String, game: GameEntry, onSuccess: () -> Unit, onError: (Exception) -> Unit) {
+    fun addGame(userId: String?, game: GameEntry, onSuccess: () -> Unit, onError: (Exception) -> Unit) {
+        if (userId.isNullOrBlank()) {
+            onError(IllegalArgumentException("El UID del usuario es nulo o vacío"))
+            return
+        }
+
         repository.addGamesToUserList(userId, game, {
             loadGamesForUser(userId)
             loadUserStats(userId)
             onSuccess()
         }, onError)
     }
+
 
     fun loadGamesForUser(userId: String) {
         repository.getGamesForUser(userId) { games ->

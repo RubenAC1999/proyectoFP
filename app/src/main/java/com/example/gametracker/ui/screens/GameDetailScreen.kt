@@ -61,15 +61,15 @@ fun GameDetailScreenContent(
     gameId: Int,
     gameViewModel: GameViewModel,
     gameListViewModel: GameListViewModel,
-    apiKey: String,
-    userId: String
+    apiKey: String
 ) {
     val gameDetail = gameViewModel.gameDetail.value
     val context = LocalContext.current
     val screenshots = gameViewModel.screenshots.value
     val imageHeight = 300.dp
     val density = LocalDensity.current
-
+    val firebaseUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+    val uid = firebaseUser?.uid
     var showDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(gameId) {
@@ -79,9 +79,7 @@ fun GameDetailScreenContent(
 
     if (gameDetail == null) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(darkGray),
+            modifier = Modifier.fillMaxSize().background(darkGray),
             contentAlignment = Alignment.Center
         ) {
             Text(text = "Cargando...", color = hueso)
@@ -119,13 +117,7 @@ fun GameDetailScreenContent(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.matchParentSize()
             )
-
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .background(Color.Black.copy(alpha = 0.4f))
-            )
-
+            Box(modifier = Modifier.matchParentSize().background(Color.Black.copy(alpha = 0.4f)))
             Box(
                 modifier = Modifier
                     .matchParentSize()
@@ -182,7 +174,6 @@ fun GameDetailScreenContent(
             ) {
                 Text("Añadir a lista")
             }
-
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -224,20 +215,25 @@ fun GameDetailScreenContent(
             gameEntry = gameEntry,
             onDismiss = { showDialog = false },
             onAdd = { updatedGame ->
-                gameListViewModel.addGame(
-                    userId = userId,
-                    game = updatedGame,
-                    onSuccess = {
-                        Toast.makeText(context, "Juego añadido", Toast.LENGTH_SHORT).show()
-                    },
-                    onError = { e ->
-                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                    }
-                )
+                if (uid != null) {
+                    gameListViewModel.addGame(
+                        userId = uid,
+                        game = updatedGame,
+                        onSuccess = {
+                            Toast.makeText(context, "Juego añadido", Toast.LENGTH_SHORT).show()
+                        },
+                        onError = { e ->
+                            Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                        }
+                    )
+                } else {
+                    Toast.makeText(context, "Debes iniciar sesión para añadir juegos", Toast.LENGTH_SHORT).show()
+                }
             }
         )
     }
 }
+
 
 
 @Composable

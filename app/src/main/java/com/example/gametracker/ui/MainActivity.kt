@@ -112,8 +112,7 @@ class MainActivity : ComponentActivity() {
                             gameId = gameId,
                             gameViewModel = gameViewModel,
                             gameListViewModel = GameListViewModel(),
-                            apiKey = apiKey,
-                            userId = userId
+                            apiKey = apiKey
                         )
                     }
                     composable(
