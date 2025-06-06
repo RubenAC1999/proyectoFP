@@ -513,20 +513,38 @@ fun ExpandableGameCard(game: GameEntry, isEditing: Boolean = false, onDeleteGame
                 }
             }
 
-            if (expanded && isEditing) {
+            if (expanded) {
                 Spacer(modifier = Modifier.height(8.dp))
-                Button(
-                    onClick = { onDeleteGame(game) },
-                    modifier = Modifier.align(Alignment.End),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Eliminar juego",
-                        tint = Color.White
+
+                if (!game.review.isNullOrBlank()) {
+                    Text(
+                        text = "Reseña:",
+                        color = naranja,
+                        style = MaterialTheme.typography.labelMedium
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Eliminar", color = Color.White)
+                    Text(
+                        text = game.review ?: "",
+                        color = Color.White,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                if (isEditing) {
+                    Button(
+                        onClick = { onDeleteGame(game) },
+                        modifier = Modifier.align(Alignment.End),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Eliminar juego",
+                            tint = Color.White
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Eliminar", color = Color.White)
+                    }
                 }
             }
         }

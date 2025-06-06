@@ -28,6 +28,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -72,7 +73,6 @@ fun ExploreScreenContent(
     launchWithSearch: Boolean = false
 ) {
     val genreGamesMap by gameViewModel.genreGamesMap
-    val searchResults by gameViewModel.searchResults
     val gamesByYear by gameViewModel.gamesByYear
     val recommendedGames by gameViewModel.recommendedGames
     val userGames = userViewModel.userGameEntries.value
@@ -82,16 +82,14 @@ fun ExploreScreenContent(
 
     var selectedYear by remember { mutableStateOf("2024") }
     var selectedGenre by remember { mutableStateOf("Action") }
-    var selectedTab by remember { mutableStateOf("Juegos") }
-
     var searchQuery by remember { mutableStateOf("") }
+    var selectedTab by remember { mutableStateOf("Juegos") }
     var showSearchOverlay by rememberSaveable { mutableStateOf(launchWithSearch) }
-
-    val scrollState = rememberScrollState()
 
     LaunchedEffect(Unit) {
         gameViewModel.loadGamesByGenres(apiKey)
         gameViewModel.loadGamesByYear(apiKey)
+        Firebase.auth.currentUser?.uid?.let { userViewModel.loadUserGameEntries(it) }
     }
 
     LaunchedEffect(userGames) {
@@ -99,179 +97,153 @@ fun ExploreScreenContent(
         gameViewModel.loadPersonalRecommendations(apiKey, favoriteGenres)
     }
 
-    LaunchedEffect(Unit) {
-        Firebase.auth.currentUser?.uid?.let {
-            userViewModel.loadUserGameEntries(it)
-        }
-    }
-
-
-
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(
+    Scaffold(
+        bottomBar = { BottomNavigationBar(navController) },
+        containerColor = darkGray
+    ) { padding ->
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(scrollState)
-                .background(darkGray)
-                .padding(horizontal = 16.dp, vertical = 24.dp)
+                .padding(padding)
         ) {
-            Spacer(modifier = Modifier.height(50.dp))
-
-            TextField(
-                value = "",
-                onValueChange = {},
-                placeholder = {
-                    Text(
-                        "Buscar juegos o usuarios...",
-                        color = Color.Gray,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Buscar",
-                        tint = hueso
-                    )
-                },
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .clickable {
-                        showSearchOverlay = true
-                    },
-                enabled = false,
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = grisClaro,
-                    unfocusedContainerColor = grisClaro,
-                    disabledContainerColor = grisClaro,
-                    disabledTextColor = hueso,
-                    disabledIndicatorColor = Color.Transparent,
-                    disabledLeadingIconColor = hueso
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .background(darkGray)
+                    .padding(horizontal = 16.dp, vertical = 24.dp)
+            ) {
+                Spacer(modifier = Modifier.height(50.dp))
+
+                TextField(
+                    value = "",
+                    onValueChange = {},
+                    placeholder = { Text("Buscar juegos o usuarios...", color = Color.Gray) },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = hueso) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { showSearchOverlay = true },
+                    enabled = false,
+                    colors = TextFieldDefaults.colors(
+                        disabledContainerColor = grisClaro,
+                        disabledTextColor = hueso,
+                        disabledIndicatorColor = Color.Transparent,
+                        disabledLeadingIconColor = hueso
+                    )
                 )
-            )
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text("Filtrar por año", color = hueso, style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                availableYears.forEach { year ->
-                    val isSelected = selectedYear == year
-                    Text(
-                        text = year,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(if (isSelected) naranja else grisClaro)
-                            .clickable { selectedYear = year }
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        color = if (isSelected) Color.White else hueso
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-            gamesByYear["Mejores de $selectedYear"]?.let { games ->
-                Text("Mejores de $selectedYear", color = hueso, style = MaterialTheme.typography.titleMedium)
+                Text("Filtrar por año", color = hueso, style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.height(8.dp))
+                Row(Modifier.fillMaxWidth(), Arrangement.SpaceEvenly) {
+                    availableYears.forEach { year ->
+                        val selected = selectedYear == year
+                        Text(
+                            text = year,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(if (selected) naranja else grisClaro)
+                                .clickable { selectedYear = year }
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            color = if (selected) Color.White else hueso
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+                gamesByYear["Mejores de $selectedYear"]?.let { games ->
+                    Text("Mejores de $selectedYear", color = hueso, style = MaterialTheme.typography.titleMedium)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LazyRow {
+                        items(games) { game ->
+                            GameCard(game = game, onClick = {
+                                navController.navigate("game_detail/${game.id}")
+                            })
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text("Filtrar por género", color = hueso, style = MaterialTheme.typography.titleMedium)
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(Modifier.fillMaxWidth(), Arrangement.SpaceEvenly) {
+                    availableGenres.forEach { genre ->
+                        val selected = selectedGenre == genre
+                        Text(
+                            text = genre,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(if (selected) naranja else grisClaro)
+                                .clickable { selectedGenre = genre }
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            color = if (selected) Color.White else hueso
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+                genreGamesMap[selectedGenre]?.let { games ->
+                    Text("Juegos de $selectedGenre", color = hueso, style = MaterialTheme.typography.titleMedium)
+                    LazyRow {
+                        items(games) { game ->
+                            GameCard(game = game, onClick = {
+                                navController.navigate("game_detail/${game.id}")
+                            })
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+                Text("Recomendado según tus gustos", style = MaterialTheme.typography.titleMedium, color = hueso)
                 LazyRow {
-                    items(games) { game ->
+                    items(recommendedGames) { game ->
                         GameCard(game = game, onClick = {
                             navController.navigate("game_detail/${game.id}")
                         })
                     }
                 }
             }
+                    if (showSearchOverlay) {
+                        SearchOverlay(
+                            searchQuery = searchQuery,
+                            onQueryChange = {
+                                searchQuery = it
+                                if (selectedTab == "Juegos" && it.length > 1) {
+                                    gameViewModel.searchGames(it, apiKey)
+                                } else if (selectedTab == "Juegos") {
+                                    gameViewModel.clearSearchResults()
+                                }
+                            },
 
-            Spacer(modifier = Modifier.height(16.dp))
 
-            Text("Filtrar por género", color = hueso, style = MaterialTheme.typography.titleMedium)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                availableGenres.forEach { genre ->
-                    val isSelected = selectedGenre == genre
-                    Text(
-                        text = genre,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(if (isSelected) naranja else grisClaro)
-                            .clickable { selectedGenre = genre }
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        color = if (isSelected) Color.White else hueso
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-            genreGamesMap[selectedGenre]?.let { games ->
-                Text("Juegos de $selectedGenre", color = hueso, style = MaterialTheme.typography.titleMedium)
-                LazyRow {
-                    items(games) { game ->
-                        GameCard(game = game, onClick = {
-                            navController.navigate("game_detail/${game.id}")
-                        })
+                            selectedTab = selectedTab,
+                            onTabChange = { selectedTab = it },
+                            gameResults = gameViewModel.searchResults.value,
+                            userResults = userViewModel.searchResults.value,
+                            onClose = { showSearchOverlay = false },
+                            onGameClick = { game ->
+                                showSearchOverlay = false
+                                navController.navigate("game_detail/${game.id}")
+                            },
+                            onUserFollow = { user ->
+                                // lógica para seguir
+                            },
+                            onUserReport = { user ->
+                                // lógica para reportar
+                            },
+                            navController = navController,
+                            gameViewModel,
+                            userViewModel,
+                            apiKey
+                        )
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-            Text("Recomendado según tus gustos", style = MaterialTheme.typography.titleMedium, color = hueso)
-            LazyRow {
-                items(recommendedGames) { game ->
-                    GameCard(game = game, onClick = {
-                        navController.navigate("game_detail/${game.id}")
-                    })
-                }
-            }
         }
-
-        if (showSearchOverlay) {
-            SearchOverlay(
-                searchQuery = searchQuery,
-                onQueryChange = {
-                    searchQuery = it
-                    if (selectedTab == "Juegos" && it.length > 1) {
-                        gameViewModel.searchGames(it, apiKey)
-                    } else if (selectedTab == "Juegos") {
-                        gameViewModel.clearSearchResults()
-                    }
-                },
-
-
-                selectedTab = selectedTab,
-                onTabChange = { selectedTab = it },
-                gameResults = gameViewModel.searchResults.value,
-                userResults = userViewModel.searchResults.value,
-                onClose = { showSearchOverlay = false },
-                onGameClick = { game ->
-                    showSearchOverlay = false
-                    navController.navigate("game_detail/${game.id}")
-                },
-                onUserFollow = { user ->
-                    // lógica para seguir
-                },
-                onUserReport = { user ->
-                    // lógica para reportar
-                },
-                navController = navController,
-                gameViewModel,
-                userViewModel,
-                apiKey
-            )
-        }
-    }
-}
 
 
 

@@ -372,8 +372,12 @@
                     )
                 )
                 NavigationBarItem(
-                    selected = false,
-                    onClick = { navController.navigate(Routes.EXPLORE) },
+                    selected = currentDestination?.startsWith(Routes.EXPLORE) == true,
+                    onClick = {
+                        if (!currentDestination.orEmpty().startsWith(Routes.EXPLORE)) {
+                            navController.navigate(Routes.EXPLORE)
+                        }
+                    },
                     icon = { Icon(Icons.Default.Search, contentDescription = "Search") },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = hueso,
