@@ -99,7 +99,9 @@ com.example.gametracker/
 └── viewmodel/
 ```
 
-## Ejemplos de uso
+---
+
+## Capturas de la aplicación
 
 ### Pantalla de autentificación
 ![registro](https://github.com/RubenAC1999/proyectoFP/blob/main/assets/inicio.png)
@@ -112,6 +114,23 @@ com.example.gametracker/
 
 ### Recomendación personalizada
 ![exploracion](https://github.com/RubenAC1999/proyectoFP/blob/main/assets/exploracion.png)
+
+* Para mucha más información consultar el manual del repositorio.*
+
+---
+
+## Licencia
+Esta aplicación está bajo la licencia *MIT.*
+
+---
+
+## Autor
+Rubén Agra Casal
+
+Gmail: rubenagra99@gmail.com
+
+LinkedIn: [rubenagradev](https://www.linkedin.com/in/rubenagradev/)
+
 
 
 
