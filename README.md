@@ -72,5 +72,46 @@ git clone https://github.com/RubenAC1999/proyectoFP.git
 cd proyectoFP
 ```
 
+### Instalación
+- Transferir archivo APK a un dispositivo Android
+- Ejecutar la APK desde el dispositivo
+- En caso de que salga una advertencia, permitir la instalación de aplicaciones desconocidas en la configuración de seguridad
+
+---
+
+## Estructura del proyecto
+
+```text
+com.example.gametracker/
+│
+├── data/
+│   ├── remote/            # Fuentes de datos remotos (APIs, servicios, llamadas HTTP...)
+│   └── repository/        # Repositorios: capa intermedia entre datos y ViewModels
+│
+├── model/
+│
+├── ui/
+│   ├── navigation/        # Control de rutas y navegación de Compose
+│   ├── screens/           # Pantallas principales (Compose)
+│   ├── theme/             # Colores, tipografías, estilos
+│   └── MainActivity.kt    # Entrada principal de la aplicación
+│
+└── viewmodel/
+```
+
+## Ejemplos de uso
+
+### Pantalla de autentificación
+![registro](https://github.com/RubenAC1999/proyectoFP/blob/main/assets/inicio.png)
+
+### Pantalla principal
+![principal](https://github.com/RubenAC1999/proyectoFP/blob/main/assets/principal.png)
+
+### Pantalla de cuenta de usuario con lista
+![cuenta](https://github.com/RubenAC1999/proyectoFP/blob/main/assets/cuenta.png)
+
+### Recomendación personalizada
+![exploracion](https://github.com/RubenAC1999/proyectoFP/blob/main/assets/exploracion.png)
+
 
 
